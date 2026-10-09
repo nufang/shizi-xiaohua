@@ -75,9 +75,14 @@
     .doors, .wardrobe-grid { display: grid; gap: 14px; min-height: 0; min-width: 0; }
     .doors {
       flex: 1;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr 1fr;
+      overflow: auto;
+      align-content: start;
+      grid-template-columns: repeat(4, 1fr);
+      grid-auto-rows: minmax(128px, auto);
     }
+    .door-emoji { font-size: 52px; line-height: 1.1; }
+    .door-meta { display: block; margin-top: 2px; font-size: 16px; font-weight: 700; color: #a855f7; }
+    .emoji-clue { font-size: min(26vh, 200px); line-height: 1.15; }
     .wardrobe-grid {
       flex: 1;
       grid-template-columns: repeat(3, 1fr);
@@ -102,6 +107,7 @@
     .door:active, .item:active, .choice:active { transform: scale(0.98); }
     .door svg, .item svg { width: 120px; height: 120px; display: block; margin: 0 auto; }
     .door-name, .item span { display: block; margin: 6px 0 0; }
+    .door-name { font-size: 20px; line-height: 1.25; }
     .star {
       position: absolute;
       top: 6px;
@@ -186,7 +192,7 @@
       .hero-pane { flex: 0 0 auto; }
       .princess { height: min(28vh, 220px); }
       h1 { font-size: 36px; }
-      .doors { grid-template-rows: auto auto; }
+      .doors { grid-template-columns: repeat(3, 1fr); }
       .door, .item { min-height: 96px; font-size: 22px; }
       .door svg, .item svg { width: 64px; height: 64px; }
       .choice { font-size: 48px; min-height: 72px; }
@@ -216,51 +222,150 @@
 </head>
 <body>
   <div id="app"></div>
+  <script src="packs.js"></script>
+<script>
+if (typeof PACKS === "undefined") {
+var PACKS = (function () {
+  var SOURCES = [
+    { id: "number", name: "数字时间", emoji: "⏰", text: "一二三四五六七八九十百千万亿零半双两对年月日时分秒晨午晚夜今明昨天春夏秋冬星期钟点早晚迟快慢前后左右上下中外里旁东西南北周旬刻午宵旦暮晓黄昏黎明" },
+    { id: "family", name: "家人朋友", emoji: "👩", text: "爸妈爷奶哥姐弟妹叔伯姑姨舅父母子女我你他她它咱们自己男女孩童宝宝婴儿朋友师生同学亲戚客人邻居同伴伙伴夫妇夫妻新娘新郎家人人家群众伙伴" },
+    { id: "body", name: "身体", emoji: "👀", text: "头脸眼耳鼻口牙齿舌头发眉颈肩手臂手指肚腿脚心身骨皮血肉腰背胸掌拳膝踝趾眉睫泪汗泪珠嘴巴下巴额头太阳穴肚子膝盖" },
+    { id: "animal", name: "小动物", emoji: "🐱", text: "猫狗鸟鱼兔马羊熊牛猪鸡鸭鹅虎龙蛇鼠猴蛙虫蝶蜂蚁蛛龟蟹虾鲸象鹿狼狐狮熊猫企鹅海豚骆驼驴骡孔雀鹦鹉燕子麻雀鸽子老鹰蚕蜻蜓蜗牛刺猬松鼠斑马长颈鹿河马犀牛海豹海星章鱼鳄鱼猩猩袋鼠考拉公鸡母鸡小鸡鸭子鹅鸟兽禽畜蜜蜂蜻蜓萤火虫蝌蚪金鱼鲤鱼鲨鱼鲸鱼海豚海豹海象企鹅天鹅鸳鸯喜鹊乌鸦麻雀黄鹂杜鹃布谷啄木鸟猫头鹰蝙蝠刺猬穿山甲松鼠田鼠黄鼠狼狐狸豹子老虎狮子大象犀牛河马长颈鹿斑马野猪豪猪袋鼠考拉树袋熊熊猫金丝猴长臂猿猩猩狒狒" },
+    { id: "plant", name: "花草树木", emoji: "🌸", text: "花草叶树木林森竹松柳梅兰菊荷桃李杏枣梨瓜果莓橘橙苹蕉葡莲藕芦苇蒲公英牡丹芍药茉莉桂花玫瑰郁金香向日葵仙人掌蘑菇苔藓青苔种子芽苗根茎枝叶花朵果实稻麦粟玉米高粱棉花芝麻花生大豆绿豆红豆扁豆蚕豆豌豆蔬菜青菜白菜菠菜芹菜韭菜葱蒜姜椒茄子黄瓜南瓜冬瓜丝瓜苦瓜番茄土豆红薯山药芋头萝卜莲藕竹笋芦笋香椿蕨菜" },
+    { id: "food", name: "吃的喝的", emoji: "🍜", text: "米饭面饼饺包子馒头粥汤菜肉蛋奶茶水果汁糖盐油酱醋酒蛋糕饼干巧克力冰淇淋糖果蜂蜜面包三明治汉堡薯条披萨寿司拉面火锅烧烤串串麻辣烫豆浆油条烧饼月饼汤圆粽子饺子馄饨抄手云吞春卷油饼煎饼果子窝头窝窝头腊肉香肠火腿培根牛排鸡翅鱼丸肉丸虾仁蟹黄海带紫菜豆腐豆干豆浆腐竹粉丝粉条面条米饭炒饭盖浇饭便当盒饭野餐零食点心甜品布丁果冻酸奶奶酪黄油奶油炼乳蜂蜜果酱辣椒花椒八角桂皮香叶料酒酱油生抽老抽蚝油番茄酱沙拉酱" },
+    { id: "nature", name: "大自然", emoji: "🌈", text: "日月星云风雨雷电雪霜雾虹山水石田河湖海江泉瀑沙泥土地天空阳光暗冷热温凉冰霜露珠彩虹晚霞朝霞银河宇宙星球地球月亮太阳星星云朵乌云彩云雾气冰雹雪花雪人风雨雷鸣闪电台风龙卷风地震火山温泉沙漠草原森林沼泽湿地海滩海岸岛屿海峡港湾峡谷平原丘陵盆地高原山脉峰峦岩石矿石煤炭石油天然气" },
+    { id: "color", name: "颜色形状", emoji: "🔴", text: "红黄蓝绿紫黑白灰粉橙棕金银圆方长尖弯直斜平正大小高低多少长短粗细轻重厚薄宽窄深浅亮暗新旧好坏美丑香臭甜苦酸辣咸淡软硬冷热干湿净脏整乱满空真假对错是非好坏优劣强弱胜负增减乘除" },
+    { id: "home", name: "家里的东西", emoji: "🏠", text: "家门窗床桌椅沙发灯杯碗盘筷勺锅刀叉瓶壶桶盆毛巾牙刷镜子钟表电话电视冰箱洗衣机空调钥匙伞包柜子抽屉衣架鞋架书架花瓶相框窗帘地毯枕头被子床单褥子席子蚊帐台灯吊灯壁灯手电筒蜡烛火柴打火机插座开关插头电线电池遥控器手机电脑平板键盘鼠标音箱耳机相机相册扫帚拖把簸箕垃圾桶洗衣液肥皂香皂洗发水沐浴露洗面奶护肤品化妆品香水口红梳子发卡皮筋" },
+    { id: "school", name: "上学认字", emoji: "📚", text: "书本笔纸尺剪刀胶水书包课堂作业考试题字词句段篇章节读写算画唱跳说听看想问答练习复习预习默写背诵朗读讲故事唱歌跳舞画画手工体育音乐美术科学语文数学英语品德班长组长同学老师校长教室办公室图书馆操场体育馆实验室计算机房食堂宿舍传达室黑板白板粉笔黑板擦讲台课桌板凳铅笔钢笔圆珠笔毛笔水彩笔蜡笔彩铅橡皮卷笔刀尺子三角板圆规量角器本子笔记本日记本相册贴画贴纸奖状红花小红花" },
+    { id: "clothes", name: "衣服打扮", emoji: "👗", text: "衣服裤裙帽鞋袜手套围巾领带纽扣拉链口袋背心马甲外套大衣风衣羽绒服毛衣衬衫西装夹克牛仔连衣裙半身裙百褶裙蓬蓬裙公主裙睡衣睡裤拖鞋凉鞋皮鞋运动鞋布鞋雨鞋雨衣斗笠草帽礼帽鸭舌帽贝雷帽发带发箍皇冠蝴蝶结丝带腰带皮带书包背包手提包斜挎包钱包零钱包首饰项链耳环戒指手链手镯胸针别针领结领花袖扣" },
+    { id: "action", name: "动作", emoji: "🏃", text: "走跑跳爬飞游泳吃喝玩笑哭看听说读写画唱跳坐站躺睡醒开闭开关拿放推拉抱打拍踢扔接送来去回进出上下升降搬抬扛挑提握抓捏揉搓拍打敲击砍切刺扎缝补洗刷擦拭晾晒折叠收拾整理打扫冲洗浸泡搅拌翻炒蒸煮烤炸煎焖炖拌切丝切片切块舀盛倒洒泼溅滴流淌涌奔腾追逐躲藏寻找发现观察思考记住忘记回答请问谢谢再见鞠躬握手拥抱亲吻挥手点头摇头回头回头看东张西望左顾右盼前俯后仰伸懒腰打哈欠打喷嚏咳嗽流鼻涕流眼泪出汗发抖寒冷炎热饥饿口渴疲倦生病受伤吃药打针挂号看病休息养病康复" },
+    { id: "place", name: "地方出行", emoji: "🚌", text: "车船飞机火车自行车路桥城乡村园公园商店医院学校图书馆车站机场码头港口公路马路人行道斑马线红绿灯交通警察司机乘客旅客行李车票船票机票护照签证地图指南针方向东南西北前后左右十字路口环形路立交桥隧道涵洞收费站服务区加油站停车场车库自行车道地铁轻轨有轨电车出租车网约车公交车校车救护车消防车警车工程车洒水车垃圾车货车卡车皮卡越野车轿车跑车面包车三轮车独轮车滑板车平衡车电动车摩托车自行车共享单车" },
+    { id: "job", name: "谁在做事", emoji: "🏫", text: "医生护士老师警察消防员司机农民工人厨师服务员售货员邮递员快递员清洁工园丁画家音乐家舞蹈家科学家宇航员飞行员船长水手渔民猎人牧民樵夫铁匠木匠石匠裁缝理发师建筑师工程师设计师程序员会计律师法官记者编辑主持人演员歌手舞者运动员裁判教练裁判员保育员园长校长班主任辅导员志愿者义工" },
+    { id: "feeling", name: "心情样子", emoji: "😊", text: "喜欢爱恨怕怒喜悲乐安心急忙乱静悄悄高兴快乐幸福难过伤心委屈生气害怕紧张放松勇敢胆小骄傲谦虚认真马虎仔细粗心诚实说谎善良凶恶温柔粗鲁礼貌无礼干净肮脏整齐杂乱安静吵闹明亮昏暗温暖寒冷柔软坚硬光滑粗糙透明浑浊新鲜陈旧古老现代简单复杂容易困难危险安全健康疾病疲劳精神饱满空虚充实孤独热闹和平战争友好敌对团结分裂" },
+    { id: "word", name: "句子里的字", emoji: "✨", text: "的了是在不有和与也就都很把被从向对给让能会要想可以因为所以但是如果虽然然后接着最后开始然后还是或者以及并且不但而且既然即使尽管无论不管除了关于对于根据按照通过为了为着沿着随着对着向着" },
+    { id: "more", name: "更多常用字", emoji: "📖", text: "人民国家生活工作学习发展社会经济文化教育科学历史地理政治法律道德思想精神文明建设管理服务生产劳动技术工具材料资源环境能源安全质量标准方法步骤过程结果原因条件目的意义价值作用影响变化进步提高降低增加减少保持继续停止完成实现达到超过包括属于存在出现消失发生发展变化运动静止平衡稳定特殊普通一般具体抽象直接间接主要次要基本高级初级中间阶段时期年代世纪古代现代未来过去现在当前目前正在已经曾经将要可能应该必须需要希望愿意决心努力坚持放弃选择决定判断比较分析总结归纳演绎推理想象创造发明发现研究试验实验观察测量计算统计调查访问记录报告说明解释介绍描述叙述议论抒情写实虚构真实虚假正确错误优点缺点长处短处好处坏处利益害处成功失败经验教训榜样模范英雄普通群众个人集体组织机构单位公司企业工厂商店银行邮局车站机场公园广场街道社区村庄城镇都市国家世界亚洲欧洲非洲美洲大洋洲南极北极东方西方南方北方中部沿海内地边疆海关口岸领土领海领空主权独立统一分裂和平友好合作竞争比赛输赢胜负名次奖杯奖牌金牌银牌铜牌奖状证书毕业开学放假放假寒假暑假春节元宵清明端午中秋重阳国庆元旦生日节日假期旅游参观游览爬山游泳露营野餐烧烤拍照留念纪念回忆忘记思念家乡祖国人民英雄烈士先辈后代子孙后代传统习俗风俗习惯礼仪仪式婚礼葬礼生日宴会聚会联欢晚会演出表演节目舞台观众掌声鲜花礼物红包压岁钱灯笼鞭炮烟花春联窗花年画福字倒贴团圆美满幸福安康吉祥如意恭喜发财新年快乐万事如意" }
+  ];
+
+  var EMOJI = {
+    "一": "1️⃣", "二": "2️⃣", "三": "3️⃣", "四": "4️⃣", "五": "5️⃣", "六": "6️⃣", "七": "7️⃣", "八": "8️⃣", "九": "9️⃣", "十": "🔟",
+    "百": "💯", "千": "🔢", "万": "💰", "零": "0️⃣", "半": "🌗", "双": "👯", "两": "2️⃣", "对": "✅",
+    "年": "📅", "月": "🌙", "日": "☀️", "时": "⏰", "分": "⏱️", "秒": "⌛", "晨": "🌅", "午": "🌞", "晚": "🌆", "夜": "🌃",
+    "今": "📍", "明": "🌄", "昨": "🔙", "春": "🌸", "夏": "🏖️", "秋": "🍂", "冬": "❄️", "星": "⭐", "期": "📅", "钟": "⏰",
+    "早": "🐤", "迟": "🐢", "快": "⚡", "慢": "🐌", "前": "⏩", "后": "⏪", "左": "⬅️", "右": "➡️", "上": "⬆️", "下": "⬇️",
+    "中": "🎯", "外": "🚪", "里": "📦", "东": "🌅", "西": "🌇", "南": "🌴", "北": "❄️",
+    "爸": "👨", "妈": "👩", "爷": "👴", "奶": "👵", "哥": "👦", "姐": "👧", "弟": "👦", "妹": "👧",
+    "我": "👉", "你": "👆", "他": "👨", "她": "👩", "它": "📦", "友": "👫", "师": "🏫", "家": "🏠",
+    "男": "👦", "女": "👧", "孩": "👶", "童": "👶", "宝": "👶", "婴": "🍼",
+    "头": "😊", "脸": "😊", "眼": "👀", "耳": "👂", "鼻": "👃", "口": "👄", "牙": "😁", "齿": "😁", "舌": "👅",
+    "手": "✋", "臂": "💪", "指": "☝️", "肚": "⭕", "腿": "🏃", "脚": "👟", "心": "❤️", "骨": "🍖", "血": "🔴",
+    "猫": "🐱", "狗": "🐶", "鸟": "🐦", "鱼": "🐟", "兔": "🐰", "马": "🐴", "羊": "🐑", "熊": "🐻", "牛": "🐮", "猪": "🐷",
+    "鸡": "🐔", "鸭": "🐦", "鹅": "🐦", "虎": "🐯", "龙": "🐲", "蛇": "🐍", "鼠": "🐭", "猴": "🐵", "蛙": "🐸", "虫": "🐛",
+    "蝶": "🐛", "蜂": "🐝", "蚁": "🐜", "蛛": "🕷️", "龟": "🐢", "蟹": "🐚", "虾": "🐟", "鲸": "🐳", "象": "🐘", "鹿": "🐴",
+    "狼": "🐺", "狐": "🐺", "狮": "🐯", "熊": "🐻", "蚕": "🐛", "龟": "🐢",
+    "花": "🌸", "草": "🌿", "叶": "🍃", "树": "🌳", "木": "🎄", "林": "🌲", "竹": "🎋", "松": "🌲", "柳": "🌿", "梅": "🌺",
+    "兰": "🌷", "菊": "🌼", "荷": "🌸", "桃": "🍑", "李": "🍑", "杏": "🍑", "枣": "🍎", "梨": "🍐", "瓜": "🍈", "果": "🍎",
+    "莓": "🍓", "橘": "🍊", "橙": "🍊", "米": "🍚", "饭": "🍚", "面": "🍜", "饼": "🍞", "饺": "🍜", "包": "🍞", "馒": "🍞",
+    "粥": "🍲", "汤": "🍲", "菜": "🌿", "肉": "🍖", "蛋": "🍳", "奶": "🍼", "茶": "🍵", "水": "💧", "糖": "🍬", "盐": "⚪",
+    "油": "⛽", "酱": "🍯", "酒": "🍷", "蛋糕": "🎂",
+    "山": "⛰️", "石": "⛰️", "田": "🌾", "河": "🏞️", "湖": "⛵", "海": "🌊", "江": "🌊", "云": "☁️", "风": "💨", "雨": "🌧️",
+    "雷": "⛈️", "电": "⚡", "雪": "❄️", "霜": "❄️", "雾": "🌫️", "虹": "🌈", "火": "🔥", "冰": "❄️", "沙": "🏜️", "土": "🌰",
+    "天": "🌤️", "空": "🌌", "阳": "☀️", "光": "💡",
+    "红": "🔴", "黄": "🌟", "蓝": "🔵", "绿": "🍀", "紫": "💜", "黑": "⚫", "白": "⚪", "灰": "☁️", "粉": "💗", "金": "👑", "银": "⚪",
+    "圆": "⭕", "方": "⬜", "大": "🐘", "小": "🐭", "高": "📏", "低": "📉", "多": "➕", "少": "➖", "长": "📏", "短": "✂️",
+    "门": "🚪", "窗": "🏠", "床": "🛏️", "桌": "📦", "椅": "💺", "灯": "💡", "杯": "🍵", "碗": "🍲", "盘": "🍴", "筷": "🍴",
+    "勺": "🍴", "锅": "🍳", "刀": "🔪", "叉": "🍴", "瓶": "🍼", "壶": "🍵", "桶": "📦", "盆": "📦", "镜": "💎", "表": "⌚",
+    "伞": "☂️", "钥": "🔑", "匙": "🔑", "书": "📕", "本": "📓", "笔": "✏️", "纸": "📄", "尺": "📏", "剪": "✂️",
+    "衣": "👕", "服": "👕", "裤": "👖", "裙": "👗", "帽": "👒", "鞋": "👟", "袜": "👟", "车": "🚗", "船": "⛵", "机": "✈️",
+    "路": "🛣️", "桥": "🌉", "城": "🏙️", "乡": "🏡", "村": "🏘️", "园": "🏞️", "店": "🏪", "医": "🏥", "院": "🏥", "校": "🏫",
+    "走": "🚶", "跑": "🏃", "跳": "🏃", "飞": "🐦", "吃": "🍴", "喝": "🍵", "玩": "🎮", "笑": "😄", "哭": "😢", "看": "👀",
+    "听": "👂", "说": "👄", "读": "📖", "写": "✍️", "画": "🎨", "唱": "🎤", "坐": "💺", "站": "🚶", "睡": "😴", "醒": "😮",
+    "开": "🔓", "关": "🔒", "来": "👋", "去": "👋", "回": "🔁", "进": "📥", "出": "📤",
+    "爱": "❤️", "怕": "😨", "乐": "😄", "安": "😌", "忙": "🏃", "喜": "🎉", "怒": "😠", "悲": "😢",
+    "的": "✨", "了": "✅", "是": "👍", "在": "📍", "不": "🚫", "有": "🎁", "和": "👫", "也": "🔁", "就": "👉", "都": "👪",
+    "很": "💯", "把": "✋", "被": "🎯", "从": "➡️", "向": "👉", "对": "🎯", "给": "🎁", "让": "🙇", "能": "💪", "会": "💡",
+    "要": "❗", "想": "💭", "可": "🆗", "以": "➡️", "因": "❓", "为": "🎯", "所": "🔍", "但": "⚖️", "如": "❓", "果": "🍎"
+  };
+
+  var pool = ["⭐", "🌙", "☀️", "🌈", "❄️", "🔥", "💧", "🌸", "🍀", "🍎", "🎈", "🎀", "👑", "💎", "🔔", "🎵", "🐰", "🐻", "🌟", "🍭", "🎂", "🎁", "💖", "💜", "💛", "💚", "💙", "⚪", "🔴", "🔵", "⚫", "🔶", "🔷", "🔸", "🔹", "🎠", "🎡", "🏰", "⛵", "🚗", "✈️", "🐱", "🐶", "🐘", "🐼", "🐸", "🐷", "🐴", "🐢", "🐦", "🐟", "🌹", "🌻", "🍉", "🍌", "🍇", "🍓", "🍞", "🍰", "🍬", "⚽", "🏀", "🎯", "🎮", "🎸", "🎤", "🎨", "🏠", "🔑", "👦", "👧", "👶", "😊", "👍", "❤️", "🌲", "🌳", "🌴", "🌺", "🌷", "🍁", "🍃", "🍄", "🌰", "🍑", "🍒", "🍊", "🍋", "🍅", "🍔", "🍕", "🍖", "🍦", "🍪", "🍯", "🍵", "☕", "🎉", "🎄", "✨", "⚡", "👣", "👕", "👗", "🐧"];
+  var used = {};
+  var seq = 0;
+  function fallback() {
+    var emoji;
+    do {
+      var a = pool[seq % pool.length];
+      var b = pool[Math.floor(seq / pool.length) % pool.length];
+      emoji = a + b;
+      seq += 1;
+    } while (used[emoji]);
+    return emoji;
+  }
+  function take(ch) {
+    var emoji = EMOJI[ch];
+    if (!emoji || used[emoji]) emoji = fallback();
+    while (used[emoji]) emoji = fallback();
+    used[emoji] = true;
+    return emoji;
+  }
+  var seen = {};
+  var packs = [];
+  SOURCES.forEach(function (source) {
+    var chars = [];
+    Array.from(source.text).forEach(function (ch) {
+      var code = ch.codePointAt(0);
+      if (code < 0x4e00 || code > 0x9fff || seen[ch]) return;
+      seen[ch] = true;
+      chars.push({ char: ch, emoji: take(ch) });
+    });
+    if (!chars.length) return;
+    packs.push({ id: source.id, name: source.name, emoji: source.emoji, chars: chars });
+  });
+  return packs;
+})();
+}
+</script>
   <script>
     const STORAGE_KEY = "shizi-castle";
 
-    const LEVELS = [
-      {
-        id: "animals",
-        name: "小动物",
-        chars: ["猫", "狗", "鸟", "鱼", "兔", "马", "羊", "熊"].map(function (char) { return { char: char }; }),
-        rewards: [
-          { id: "cat-ears", name: "猫耳", slot: "hair" },
-          { id: "bow", name: "蝴蝶结", slot: "hair" },
-          { id: "puff-skirt", name: "蓬蓬裙", slot: "dress" }
-        ]
-      },
-      {
-        id: "flowers",
-        name: "花朵",
-        chars: ["花", "草", "叶", "树", "桃", "荷", "兰", "菊"].map(function (char) { return { char: char }; }),
-        rewards: [
-          { id: "flower-crown", name: "花冠", slot: "hair" },
-          { id: "pink-clip", name: "粉花夹", slot: "hair" },
-          { id: "petal-skirt", name: "花瓣裙", slot: "dress" }
-        ]
-      },
-      {
-        id: "fruits",
-        name: "水果",
-        chars: ["果", "梨", "瓜", "枣", "杏", "李", "橘", "莓"].map(function (char) { return { char: char }; }),
-        rewards: [
-          { id: "strawberry-clip", name: "草莓夹", slot: "hair" },
-          { id: "cherry-clip", name: "樱桃夹", slot: "hair" },
-          { id: "candy-skirt", name: "糖果裙", slot: "dress" }
-        ]
-      },
-      {
-        id: "family",
-        name: "家人",
-        chars: ["妈", "爸", "我", "姐", "妹", "奶", "爷", "家"].map(function (char) { return { char: char }; }),
-        rewards: [
-          { id: "crown", name: "小皇冠", slot: "hair" },
-          { id: "ribbon", name: "丝带", slot: "hair" },
-          { id: "princess-skirt", name: "公主裙", slot: "dress" }
-        ]
-      }
+    const REWARDS = [
+      { id: "cat-ears", name: "猫耳", slot: "hair" },
+      { id: "bow", name: "蝴蝶结", slot: "hair" },
+      { id: "puff-skirt", name: "蓬蓬裙", slot: "dress" },
+      { id: "flower-crown", name: "花冠", slot: "hair" },
+      { id: "pink-clip", name: "粉花夹", slot: "hair" },
+      { id: "petal-skirt", name: "花瓣裙", slot: "dress" },
+      { id: "strawberry-clip", name: "草莓夹", slot: "hair" },
+      { id: "cherry-clip", name: "樱桃夹", slot: "hair" },
+      { id: "candy-skirt", name: "糖果裙", slot: "dress" },
+      { id: "crown", name: "小皇冠", slot: "hair" },
+      { id: "ribbon", name: "丝带", slot: "hair" },
+      { id: "princess-skirt", name: "公主裙", slot: "dress" }
     ];
+
+    function buildGame() {
+      const levels = [];
+      PACKS.forEach(function (pack) {
+        const chars = pack.chars.slice();
+        const rounds = [];
+        while (chars.length) rounds.push(chars.splice(0, 8));
+        if (rounds.length > 1 && rounds[rounds.length - 1].length < 3) {
+          const tail = rounds.pop();
+          rounds[rounds.length - 1] = rounds[rounds.length - 1].concat(tail);
+        }
+        rounds.forEach(function (round, index) {
+          levels.push({
+            id: pack.id + "-" + (index + 1),
+            categoryId: pack.id,
+            categoryName: pack.name,
+            categoryEmoji: pack.emoji,
+            name: pack.name + " 第" + (index + 1) + "关",
+            chars: round
+          });
+        });
+      });
+      return levels;
+    }
+
+    const LEVELS = buildGame();
 
     const CHAR_ART = {
       "猫": '<polygon points="34,54 44,24 56,50" fill="#d1d5db"/><polygon points="86,54 76,24 64,50" fill="#d1d5db"/><ellipse cx="60" cy="68" rx="32" ry="28" fill="#e5e7eb"/><ellipse cx="60" cy="76" rx="14" ry="10" fill="#fbcfe8"/><circle cx="48" cy="64" r="4" fill="#374151"/><circle cx="72" cy="64" r="4" fill="#374151"/><path d="M60 72 l-4 6 h8 z" fill="#f472b6"/>',
@@ -334,6 +439,7 @@
     let progress = emptyProgress();
     const session = {
       screen: "home",
+      categoryId: null,
       levelId: null,
       queue: [],
       qIndex: 0,
@@ -341,6 +447,7 @@
       speechMissing: false,
       quizEpoch: 0
     };
+    let speechToken = 0;
     let app = null;
 
     function petals() {
@@ -378,9 +485,7 @@
     }
 
     function allItems() {
-      return LEVELS.reduce(function (list, level) {
-        return list.concat(level.rewards);
-      }, []);
+      return REWARDS;
     }
 
     function findLevel(id) {
@@ -457,17 +562,16 @@
         return { progress: progressState, openWardrobe: false };
       }
       const ownedItemIds = progressState.ownedItemIds.slice();
-      level.rewards.forEach(function (reward) {
-        if (ownedItemIds.indexOf(reward.id) === -1) ownedItemIds.push(reward.id);
-      });
+      const reward = REWARDS[progressState.clearedLevels.length] || null;
+      if (reward && ownedItemIds.indexOf(reward.id) === -1) ownedItemIds.push(reward.id);
       return {
         progress: {
           clearedLevels: progressState.clearedLevels.concat(level.id),
           ownedItemIds: ownedItemIds,
           equipped: { hair: progressState.equipped.hair, dress: progressState.equipped.dress },
-          wardrobePending: true
+          wardrobePending: !!reward
         },
-        openWardrobe: true
+        openWardrobe: !!reward
       };
     }
 
@@ -511,7 +615,7 @@
     }
 
     function fireworks() {
-      if (progress.clearedLevels.length < 4) return "";
+      if (progress.clearedLevels.length < LEVELS.length) return "";
       const colors = ["#fde68a", "#ffffff", "#f9a8d4", "#fbbf24"];
       let html = '<div class="fireworks" aria-hidden="true">';
       for (let i = 0; i < 10; i += 1) {
@@ -526,6 +630,36 @@
       note.hidden = !session.speechMissing;
     }
 
+    function isChineseVoice(voice) {
+      return /zh|chinese|中文|汉语/i.test((voice.lang || "") + " " + (voice.name || ""));
+    }
+
+    function voiceScore(voice) {
+      const blob = ((voice.lang || "") + " " + (voice.name || "")).toLowerCase();
+      let score = 0;
+      if (/zh-cn|cmn-hans|simplified|普通话|大陆/.test(blob)) score += 30;
+      else score += 10;
+      if (/natural|neural|premium|enhanced|online|高质量|增强/.test(blob)) score += 80;
+      if (/xiaoxiao|xiaoyi|xiaohan|xiaomeng|yunxi|yunyang|yunjian|tingting|ting-ting|婷婷/.test(blob)) score += 25;
+      if (voice.localService) score += 8;
+      return score;
+    }
+
+    function pickChineseVoice() {
+      if (!window.speechSynthesis) return null;
+      const voices = window.speechSynthesis.getVoices().filter(isChineseVoice);
+      let best = null;
+      let bestScore = -1;
+      voices.forEach(function (voice) {
+        const score = voiceScore(voice);
+        if (score > bestScore) {
+          bestScore = score;
+          best = voice;
+        }
+      });
+      return best;
+    }
+
     function warmVoices() {
       if (!window.speechSynthesis || typeof window.SpeechSynthesisUtterance !== "function") {
         session.speechMissing = true;
@@ -534,17 +668,21 @@
       const check = function () {
         const voices = window.speechSynthesis.getVoices();
         if (!voices.length) return;
-        const chinese = voices.some(function (voice) {
-          return /zh|chinese/i.test(voice.lang + " " + voice.name);
-        });
-        if (!chinese) session.speechMissing = true;
+        if (!voices.some(isChineseVoice)) session.speechMissing = true;
         setSpeechNote();
       };
       window.speechSynthesis.addEventListener("voiceschanged", check);
       check();
     }
 
-    function speak(text) {
+    function stopSpeech() {
+      speechToken += 1;
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+    }
+
+    function speak(text, times) {
+      const count = times || 1;
+      const token = ++speechToken;
       return new Promise(function (resolve) {
         if (!window.speechSynthesis || typeof window.SpeechSynthesisUtterance !== "function") {
           session.speechMissing = true;
@@ -553,28 +691,51 @@
           return;
         }
         let settled = false;
+        let left = count;
         const finish = function () {
           if (settled) return;
           settled = true;
-          clearTimeout(timer);
           resolve();
         };
-        const timer = setTimeout(finish, 1000);
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = "zh-CN";
-        utterance.rate = 0.85;
-        utterance.onend = finish;
-        utterance.onerror = function (event) {
-          const reason = event && event.error;
-          if (reason !== "interrupted" && reason !== "canceled") {
-            session.speechMissing = true;
-            setSpeechNote();
+        const sayOnce = function () {
+          if (settled || token !== speechToken) {
+            finish();
+            return;
           }
-          finish();
-        };
-        window.speechSynthesis.cancel();
-        setTimeout(function () {
-          if (settled) return;
+          if (left <= 0) {
+            finish();
+            return;
+          }
+          left -= 1;
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = "zh-CN";
+          utterance.rate = 0.9;
+          utterance.pitch = 1;
+          const voice = pickChineseVoice();
+          if (voice) utterance.voice = voice;
+          let moved = false;
+          const next = function () {
+            if (moved) return;
+            moved = true;
+            clearTimeout(utterTimer);
+            if (settled || token !== speechToken) {
+              finish();
+              return;
+            }
+            if (left <= 0) finish();
+            else setTimeout(sayOnce, 420);
+          };
+          const utterTimer = setTimeout(next, 1600);
+          utterance.onend = next;
+          utterance.onerror = function (event) {
+            const reason = event && event.error;
+            if (reason !== "interrupted" && reason !== "canceled") {
+              session.speechMissing = true;
+              setSpeechNote();
+            }
+            if (token !== speechToken) finish();
+            else next();
+          };
           try {
             if (window.speechSynthesis.paused) window.speechSynthesis.resume();
             window.speechSynthesis.speak(utterance);
@@ -583,29 +744,89 @@
             setSpeechNote();
             finish();
           }
-        }, 50);
+        };
+        window.speechSynthesis.cancel();
+        setTimeout(function () {
+          if (token !== speechToken) {
+            finish();
+            return;
+          }
+          sayOnce();
+        }, 60);
       });
     }
 
+    function totalChars() {
+      return LEVELS.reduce(function (sum, level) { return sum + level.chars.length; }, 0);
+    }
+
+    function levelsIn(categoryId) {
+      return LEVELS.filter(function (level) { return level.categoryId === categoryId; });
+    }
+
+    function clueMarkup(item) {
+      if (item.emoji) return '<div class="emoji-clue">' + item.emoji + "</div>";
+      if (CHAR_ART[item.char]) return svg(CHAR_ART[item.char]);
+      return '<div class="emoji-clue">' + item.char + "</div>";
+    }
+
     function renderHome() {
-      const doors = LEVELS.map(function (level) {
-        const done = progress.clearedLevels.indexOf(level.id) !== -1;
-        return '<button type="button" class="door" data-action="level" data-id="' + level.id + '">' +
-          svg(CHAR_ART[level.chars[0].char]) +
-          '<span class="door-name">' + level.name + "</span>" +
-          '<span class="star">' + (done ? "★" : "") + "</span></button>";
+      const seen = {};
+      const cats = [];
+      LEVELS.forEach(function (level) {
+        if (seen[level.categoryId]) return;
+        seen[level.categoryId] = true;
+        const mine = levelsIn(level.categoryId);
+        const done = mine.filter(function (item) {
+          return progress.clearedLevels.indexOf(item.id) !== -1;
+        }).length;
+        cats.push({
+          id: level.categoryId,
+          name: level.categoryName,
+          emoji: level.categoryEmoji,
+          done: done,
+          total: mine.length
+        });
+      });
+      const doors = cats.map(function (cat) {
+        const finished = cat.done === cat.total;
+        return '<button type="button" class="door" data-action="category" data-id="' + cat.id + '">' +
+          '<span class="door-emoji">' + cat.emoji + "</span>" +
+          '<span class="door-name">' + cat.name + "</span>" +
+          '<span class="door-meta">' + cat.done + "/" + cat.total + "关</span>" +
+          '<span class="star">' + (finished ? "★" : "") + "</span></button>";
       }).join("");
-      const banner = progress.clearedLevels.length === 4 ? '<p class="banner">四关都过啦</p>' : "";
+      const allDone = progress.clearedLevels.length === LEVELS.length;
       app.innerHTML = frame(
-        fireworks() +
+        (allDone ? fireworks() : "") +
         '<div class="split">' +
           '<div class="hero-pane">' +
             "<h1>糖果城堡</h1>" +
             '<div class="hero">' + princessMarkup(progress.equipped) + "</div>" +
-            banner +
+            '<p class="level-name">一共 ' + totalChars() + " 个字</p>" +
+            (allDone ? '<p class="banner">全部过关啦</p>' : "") +
           "</div>" +
           '<div class="doors">' + doors + "</div>" +
         "</div>"
+      );
+    }
+
+    function renderCategory() {
+      const levels = levelsIn(session.categoryId);
+      const title = levels.length ? levels[0].categoryName : "糖果城堡";
+      const count = levels.reduce(function (sum, level) { return sum + level.chars.length; }, 0);
+      const doors = levels.map(function (level, index) {
+        const done = progress.clearedLevels.indexOf(level.id) !== -1;
+        return '<button type="button" class="door" data-action="level" data-id="' + level.id + '">' +
+          '<span class="door-emoji">' + (index + 1) + "</span>" +
+          '<span class="door-name">第' + (index + 1) + "关</span>" +
+          '<span class="door-meta">' + level.chars.length + "个字</span>" +
+          '<span class="star">' + (done ? "★" : "") + "</span></button>";
+      }).join("");
+      app.innerHTML = frame(
+        '<div class="quiz-top"><button type="button" class="back" data-action="home">回城堡</button>' +
+        '<p class="level-name">' + title + " · " + count + " 个字</p></div>" +
+        '<div class="doors">' + doors + "</div>"
       );
     }
 
@@ -621,15 +842,15 @@
         return '<button type="button" class="choice" data-action="pick" data-char="' + item.char + '">' + item.char + "</button>";
       }).join("");
       app.innerHTML = frame(
-        '<div class="quiz-top"><button type="button" class="back" data-action="back">回城堡</button>' +
+        '<div class="quiz-top"><button type="button" class="back" data-action="back">返回</button>' +
         '<p class="level-name">' + level.name + "</p>" +
         '<div class="dots">' + dots + "</div></div>" +
         '<div class="quiz-body">' +
-          '<div class="picture-card">' + svg(CHAR_ART[answer.char]) + "</div>" +
+          '<div class="picture-card">' + clueMarkup(answer) + "</div>" +
           '<div class="choices">' + choices + "</div>" +
         "</div>"
       );
-      speak(answer.char);
+      speak(answer.char, 3);
     }
 
     function renderWardrobe() {
@@ -661,6 +882,7 @@
     function render() {
       if (session.screen === "quiz") renderQuiz();
       else if (session.screen === "wardrobe") renderWardrobe();
+      else if (session.screen === "category") renderCategory();
       else renderHome();
     }
 
@@ -679,11 +901,11 @@
     function backHome() {
       session.quizEpoch += 1;
       session.locked = false;
-      session.screen = "home";
+      session.screen = session.categoryId ? "category" : "home";
       session.levelId = null;
       session.queue = [];
       session.qIndex = 0;
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      stopSpeech();
       render();
     }
 
@@ -697,7 +919,7 @@
       session.queue = [];
       session.qIndex = 0;
       session.locked = false;
-      session.screen = result.openWardrobe ? "wardrobe" : "home";
+      session.screen = result.openWardrobe ? "wardrobe" : (session.categoryId ? "category" : "home");
       render();
     }
 
@@ -725,7 +947,7 @@
       if (card) card.classList.add("right");
       const epoch = session.quizEpoch;
       const levelId = session.levelId;
-      speak(answer.char).then(function () {
+      speak(answer.char, 2).then(function () {
         if (epoch !== session.quizEpoch) return;
         if (session.screen !== "quiz" || session.levelId !== levelId) return;
         session.qIndex += 1;
@@ -740,7 +962,25 @@
       if (!item || progress.ownedItemIds.indexOf(id) === -1) return;
       progress = applyEquip(progress, item);
       saveProgress(progress);
+      session.screen = session.categoryId ? "category" : "home";
+      render();
+    }
+
+    function openCategory(id) {
+      session.categoryId = id;
+      session.screen = "category";
+      render();
+    }
+
+    function goHome() {
+      session.quizEpoch += 1;
+      session.locked = false;
+      session.categoryId = null;
+      session.levelId = null;
+      session.queue = [];
+      session.qIndex = 0;
       session.screen = "home";
+      stopSpeech();
       render();
     }
 
@@ -748,6 +988,8 @@
       const target = event.target.closest("[data-action]");
       if (!target) return;
       const action = target.dataset.action;
+      if (action === "category") openCategory(target.dataset.id);
+      if (action === "home") goHome();
       if (action === "level") startLevel(target.dataset.id);
       if (action === "back") backHome();
       if (action === "pick") onPick(target.dataset.char);
