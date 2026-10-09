@@ -8,20 +8,22 @@
     * { box-sizing: border-box; }
     html, body { margin: 0; height: 100%; }
     body {
-      display: grid;
-      place-items: center;
       background: #2a1048;
       color: white;
       font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
       touch-action: manipulation;
+      overflow: hidden;
     }
     button { font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-    #app { width: min(480px, 100%); min-height: 100%; }
+    #app { width: 100%; height: 100%; }
     .stage {
       position: relative;
-      min-height: 100vh;
-      padding: 18px 16px 28px;
+      height: 100%;
+      min-height: 100%;
+      padding: 18px 24px 76px;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
       background: linear-gradient(180deg, #6d28d9 0%, #db2777 58%, #fbbf24 100%);
     }
     .stage::after {
@@ -30,46 +32,76 @@
       left: 6%;
       right: 6%;
       bottom: 0;
-      height: 92px;
+      height: 68px;
       pointer-events: none;
       background: rgba(255, 255, 255, 0.14);
       clip-path: polygon(0 100%, 0 46%, 10% 46%, 10% 18%, 18% 18%, 18% 46%, 32% 46%, 32% 8%, 42% 8%, 42% 50%, 58% 50%, 58% 22%, 70% 22%, 70% 54%, 82% 54%, 82% 16%, 92% 16%, 92% 58%, 100% 58%, 100% 100%);
     }
-    .stage > * { position: relative; z-index: 1; }
+    .stage > *:not(.fireworks):not(.note) { position: relative; z-index: 1; }
+    .split {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .hero-pane {
+      flex: 0 0 34%;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
     h1 {
-      margin: 4px 0 8px;
+      margin: 0 0 8px;
       text-align: center;
-      font-size: 36px;
+      font-size: 48px;
       letter-spacing: 2px;
       text-shadow: 0 3px 0 #7e22ce;
     }
-    .hero { display: flex; justify-content: center; margin: 4px 0 12px; }
-    .princess { width: 138px; height: auto; filter: drop-shadow(0 8px 0 rgba(91, 33, 135, 0.25)); }
+    .hero { display: flex; justify-content: center; margin: 4px 0 8px; min-height: 0; }
+    .princess { width: auto; height: min(52vh, 420px); filter: drop-shadow(0 8px 0 rgba(91, 33, 135, 0.25)); }
     .banner {
-      margin: 0 0 12px;
+      margin: 8px 0 0;
       text-align: center;
       font-size: 22px;
       font-weight: 800;
       color: #7c2d12;
       background: #fde68a;
       border-radius: 999px;
-      padding: 8px 14px;
+      padding: 8px 18px;
     }
-    .doors, .wardrobe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .wardrobe-grid { grid-template-columns: repeat(3, 1fr); }
+    .doors, .wardrobe-grid { display: grid; gap: 14px; min-height: 0; min-width: 0; }
+    .doors {
+      flex: 1;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+    }
+    .wardrobe-grid {
+      flex: 1;
+      grid-template-columns: repeat(3, 1fr);
+      grid-auto-rows: minmax(132px, 1fr);
+      align-content: stretch;
+      overflow: auto;
+    }
     .door, .item {
       position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       border: 3px solid transparent;
       border-radius: 22px;
       background: rgba(255, 255, 255, 0.94);
       color: #7e22ce;
-      min-height: 112px;
-      font-size: 22px;
+      min-height: 0;
+      font-size: 28px;
       font-weight: 800;
     }
     .door:active, .item:active, .choice:active { transform: scale(0.98); }
-    .door svg, .item svg { width: 64px; height: 64px; display: block; margin: 8px auto 0; }
-    .door-name, .item span { display: block; margin: 2px 0 8px; }
+    .door svg, .item svg { width: 120px; height: 120px; display: block; margin: 0 auto; }
+    .door-name, .item span { display: block; margin: 6px 0 0; }
     .star {
       position: absolute;
       top: 6px;
@@ -78,7 +110,8 @@
       font-size: 26px;
       line-height: 1;
     }
-    .quiz-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .quiz-top { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
+    .quiz-top .level-name { margin: 0; flex: 1; text-align: left; }
     .back {
       min-height: 48px;
       padding: 8px 14px;
@@ -93,27 +126,40 @@
     .dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(255, 255, 255, 0.35); }
     .dot.on, .dot.now { background: #fde68a; }
     .dot.now { box-shadow: 0 0 0 3px rgba(253, 230, 138, 0.45); }
-    .level-name { text-align: center; margin: 10px 0; font-size: 18px; font-weight: 700; }
+    .level-name { text-align: center; margin: 10px 0; font-size: 22px; font-weight: 700; }
+    .quiz-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      gap: 16px;
+      margin-top: 12px;
+    }
     .picture-card {
+      flex: 1.15;
       background: white;
       border-radius: 28px;
-      min-height: 210px;
+      min-height: 0;
       display: grid;
       place-items: center;
-      margin-bottom: 14px;
       box-shadow: 0 10px 0 rgba(126, 34, 206, 0.25);
     }
-    .picture-card svg { width: 180px; height: 180px; }
+    .picture-card svg { width: min(50vh, 420px); height: min(50vh, 420px); }
     .picture-card.right { box-shadow: 0 0 0 5px #fde68a, 0 10px 0 rgba(126, 34, 206, 0.25); }
-    .choices { display: flex; gap: 10px; }
+    .choices {
+      flex: 0.85;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
     .choice {
       flex: 1;
-      min-height: 96px;
+      min-height: 0;
       border-radius: 22px;
       border: 3px solid rgba(255, 255, 255, 0.65);
       background: rgba(255, 255, 255, 0.2);
       color: white;
-      font-size: 44px;
+      font-size: 72px;
       font-weight: 800;
     }
     .choice.right { background: #fde68a; color: #7e22ce; border-color: #fde68a; }
@@ -125,11 +171,29 @@
     }
     .item.worn { border-color: #fbbf24; box-shadow: 0 0 0 3px #fde68a; }
     .note {
-      margin: 14px 0 0;
-      font-size: 12px;
+      position: absolute;
+      right: 18px;
+      bottom: 10px;
+      z-index: 3;
+      margin: 0;
+      font-size: 13px;
       line-height: 1.4;
       text-align: right;
       color: rgba(255, 255, 255, 0.92);
+    }
+    @media (max-width: 800px), (orientation: portrait) {
+      .split, .quiz-body { flex-direction: column; }
+      .hero-pane { flex: 0 0 auto; }
+      .princess { height: min(28vh, 220px); }
+      h1 { font-size: 36px; }
+      .doors { grid-template-rows: auto auto; }
+      .door, .item { min-height: 96px; font-size: 22px; }
+      .door svg, .item svg { width: 64px; height: 64px; }
+      .choice { font-size: 48px; min-height: 72px; }
+      .picture-card { min-height: 180px; }
+      .picture-card svg { width: 180px; height: 180px; }
+      .stage { overflow: auto; }
+      body { overflow: auto; }
     }
     .fireworks { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
     .spark {
@@ -533,10 +597,15 @@
       }).join("");
       const banner = progress.clearedLevels.length === 4 ? '<p class="banner">四关都过啦</p>' : "";
       app.innerHTML = frame(
-        "<h1>糖果城堡</h1>" + fireworks() +
-        '<div class="hero">' + princessMarkup(progress.equipped) + "</div>" +
-        banner +
-        '<div class="doors">' + doors + "</div>"
+        fireworks() +
+        '<div class="split">' +
+          '<div class="hero-pane">' +
+            "<h1>糖果城堡</h1>" +
+            '<div class="hero">' + princessMarkup(progress.equipped) + "</div>" +
+            banner +
+          "</div>" +
+          '<div class="doors">' + doors + "</div>" +
+        "</div>"
       );
     }
 
@@ -552,10 +621,13 @@
         return '<button type="button" class="choice" data-action="pick" data-char="' + item.char + '">' + item.char + "</button>";
       }).join("");
       app.innerHTML = frame(
-        '<div class="quiz-top"><button type="button" class="back" data-action="back">回城堡</button><div class="dots">' + dots + "</div></div>" +
+        '<div class="quiz-top"><button type="button" class="back" data-action="back">回城堡</button>' +
         '<p class="level-name">' + level.name + "</p>" +
-        '<div class="picture-card">' + svg(CHAR_ART[answer.char]) + "</div>" +
-        '<div class="choices">' + choices + "</div>"
+        '<div class="dots">' + dots + "</div></div>" +
+        '<div class="quiz-body">' +
+          '<div class="picture-card">' + svg(CHAR_ART[answer.char]) + "</div>" +
+          '<div class="choices">' + choices + "</div>" +
+        "</div>"
       );
       speak(answer.char);
     }
@@ -575,9 +647,14 @@
           svg(ITEM_ART[item.id]) + "<span>" + item.name + "</span></button>";
       }).join("");
       app.innerHTML = frame(
-        "<h1>衣橱</h1><p class=\"banner\">选一件穿上</p>" +
-        '<div class="hero">' + princessMarkup(progress.equipped) + "</div>" +
-        '<div class="wardrobe-grid">' + cards + "</div>"
+        '<div class="split">' +
+          '<div class="hero-pane">' +
+            "<h1>衣橱</h1>" +
+            '<div class="hero">' + princessMarkup(progress.equipped) + "</div>" +
+            '<p class="banner">选一件穿上</p>' +
+          "</div>" +
+          '<div class="wardrobe-grid">' + cards + "</div>" +
+        "</div>"
       );
     }
 
