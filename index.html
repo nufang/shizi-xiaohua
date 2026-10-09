@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>糖果城堡识字</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      display: grid;
+      place-items: center;
+      background: #2a1048;
+      color: white;
+      font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+      touch-action: manipulation;
+    }
+    button { font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    #app { width: min(480px, 100%); min-height: 100%; }
+    .stage {
+      position: relative;
+      min-height: 100vh;
+      padding: 18px 16px 28px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #6d28d9 0%, #db2777 58%, #fbbf24 100%);
+    }
+    .stage::after {
+      content: "";
+      position: absolute;
+      left: 6%;
+      right: 6%;
+      bottom: 0;
+      height: 92px;
+      pointer-events: none;
+      background: rgba(255, 255, 255, 0.14);
+      clip-path: polygon(0 100%, 0 46%, 10% 46%, 10% 18%, 18% 18%, 18% 46%, 32% 46%, 32% 8%, 42% 8%, 42% 50%, 58% 50%, 58% 22%, 70% 22%, 70% 54%, 82% 54%, 82% 16%, 92% 16%, 92% 58%, 100% 58%, 100% 100%);
+    }
+    .stage > * { position: relative; z-index: 1; }
+    h1 {
+      margin: 4px 0 8px;
+      text-align: center;
+      font-size: 36px;
+      letter-spacing: 2px;
+      text-shadow: 0 3px 0 #7e22ce;
+    }
+    .hero { display: flex; justify-content: center; margin: 4px 0 12px; }
+    .princess { width: 138px; height: auto; filter: drop-shadow(0 8px 0 rgba(91, 33, 135, 0.25)); }
+    .banner {
+      margin: 0 0 12px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 800;
+      color: #7c2d12;
+      background: #fde68a;
+      border-radius: 999px;
+      padding: 8px 14px;
+    }
+    .doors, .wardrobe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .wardrobe-grid { grid-template-columns: repeat(3, 1fr); }
+    .door, .item {
+      position: relative;
+      border: 3px solid transparent;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.94);
+      color: #7e22ce;
+      min-height: 112px;
+      font-size: 22px;
+      font-weight: 800;
+    }
+    .door:active, .item:active, .choice:active { transform: scale(0.98); }
+    .door svg, .item svg { width: 64px; height: 64px; display: block; margin: 8px auto 0; }
+    .door-name, .item span { display: block; margin: 2px 0 8px; }
+    .star {
+      position: absolute;
+      top: 6px;
+      right: 10px;
+      color: #f59e0b;
+      font-size: 26px;
+      line-height: 1;
+    }
+    .quiz-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .back {
+      min-height: 48px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 2px solid rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.18);
+      color: white;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .dots { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(255, 255, 255, 0.35); }
+    .dot.on, .dot.now { background: #fde68a; }
+    .dot.now { box-shadow: 0 0 0 3px rgba(253, 230, 138, 0.45); }
+    .level-name { text-align: center; margin: 10px 0; font-size: 18px; font-weight: 700; }
+    .picture-card {
+      background: white;
+      border-radius: 28px;
+      min-height: 210px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 14px;
+      box-shadow: 0 10px 0 rgba(126, 34, 206, 0.25);
+    }
+    .picture-card svg { width: 180px; height: 180px; }
+    .picture-card.right { box-shadow: 0 0 0 5px #fde68a, 0 10px 0 rgba(126, 34, 206, 0.25); }
+    .choices { display: flex; gap: 10px; }
+    .choice {
+      flex: 1;
+      min-height: 96px;
+      border-radius: 22px;
+      border: 3px solid rgba(255, 255, 255, 0.65);
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      font-size: 44px;
+      font-weight: 800;
+    }
+    .choice.right { background: #fde68a; color: #7e22ce; border-color: #fde68a; }
+    .shake { animation: shake 0.35s ease; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+    .item.worn { border-color: #fbbf24; box-shadow: 0 0 0 3px #fde68a; }
+    .note {
+      margin: 14px 0 0;
+      font-size: 12px;
+      line-height: 1.4;
+      text-align: right;
+      color: rgba(255, 255, 255, 0.92);
+    }
+    .fireworks { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
+    .spark {
+      position: absolute;
+      bottom: 90px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      animation: rise 1.8s ease-in infinite;
+    }
+    @keyframes rise {
+      0% { transform: translateY(20px) scale(0.4); opacity: 0; }
+      25% { opacity: 1; }
+      100% { transform: translateY(-240px) scale(1); opacity: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .shake, .spark { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    const STORAGE_KEY = "shizi-castle";
+
+    const LEVELS = [
+      {
+        id: "animals",
+        name: "小动物",
+        chars: ["猫", "狗", "鸟", "鱼", "兔", "马", "羊", "熊"].map(function (char) { return { char: char }; }),
+        rewards: [
+          { id: "cat-ears", name: "猫耳", slot: "hair" },
+          { id: "bow", name: "蝴蝶结", slot: "hair" },
+          { id: "puff-skirt", name: "蓬蓬裙", slot: "dress" }
+        ]
+      },
+      {
+        id: "flowers",
+        name: "花朵",
+        chars: ["花", "草", "叶", "树", "桃", "荷", "兰", "菊"].map(function (char) { return { char: char }; }),
+        rewards: [
+          { id: "flower-crown", name: "花冠", slot: "hair" },
+          { id: "pink-clip", name: "粉花夹", slot: "hair" },
+          { id: "petal-skirt", name: "花瓣裙", slot: "dress" }
+        ]
+      },
+      {
+        id: "fruits",
+        name: "水果",
+        chars: ["果", "梨", "瓜", "枣", "杏", "李", "橘", "莓"].map(function (char) { return { char: char }; }),
+        rewards: [
+          { id: "strawberry-clip", name: "草莓夹", slot: "hair" },
+          { id: "cherry-clip", name: "樱桃夹", slot: "hair" },
+          { id: "candy-skirt", name: "糖果裙", slot: "dress" }
+        ]
+      },
+      {
+        id: "family",
+        name: "家人",
+        chars: ["妈", "爸", "我", "姐", "妹", "奶", "爷", "家"].map(function (char) { return { char: char }; }),
+        rewards: [
+          { id: "crown", name: "小皇冠", slot: "hair" },
+          { id: "ribbon", name: "丝带", slot: "hair" },
+          { id: "princess-skirt", name: "公主裙", slot: "dress" }
+        ]
+      }
+    ];
+
+    const CHAR_ART = {
+      "猫": '<polygon points="34,54 44,24 56,50" fill="#d1d5db"/><polygon points="86,54 76,24 64,50" fill="#d1d5db"/><ellipse cx="60" cy="68" rx="32" ry="28" fill="#e5e7eb"/><ellipse cx="60" cy="76" rx="14" ry="10" fill="#fbcfe8"/><circle cx="48" cy="64" r="4" fill="#374151"/><circle cx="72" cy="64" r="4" fill="#374151"/><path d="M60 72 l-4 6 h8 z" fill="#f472b6"/>',
+      "狗": '<ellipse cx="28" cy="70" rx="12" ry="18" fill="#b45309"/><ellipse cx="92" cy="70" rx="12" ry="18" fill="#b45309"/><ellipse cx="60" cy="68" rx="30" ry="28" fill="#d97706"/><ellipse cx="60" cy="78" rx="14" ry="10" fill="#fde68a"/><circle cx="48" cy="62" r="4" fill="#374151"/><circle cx="72" cy="62" r="4" fill="#374151"/><ellipse cx="60" cy="74" rx="4" ry="3" fill="#7c2d12"/>',
+      "鸟": '<ellipse cx="78" cy="62" rx="24" ry="16" fill="#38bdf8"/><polygon points="98,62 114,54 114,70" fill="#fbbf24"/><circle cx="70" cy="58" r="3" fill="#0f172a"/><path d="M40 70 q20 20 36 0" fill="#0284c7"/>',
+      "鱼": '<ellipse cx="58" cy="62" rx="28" ry="18" fill="#22d3ee"/><polygon points="86,62 110,44 110,80" fill="#06b6d4"/><circle cx="42" cy="58" r="3" fill="#0f172a"/><path d="M48 62 h16" stroke="#ffffff" stroke-width="3"/>',
+      "兔": '<ellipse cx="42" cy="36" rx="8" ry="20" fill="#fbcfe8"/><ellipse cx="78" cy="36" rx="8" ry="20" fill="#fbcfe8"/><ellipse cx="60" cy="74" rx="28" ry="26" fill="#fce7f3"/><circle cx="50" cy="70" r="3" fill="#374151"/><circle cx="70" cy="70" r="3" fill="#374151"/><path d="M56 80 h8" stroke="#f472b6" stroke-width="3"/>',
+      "马": '<ellipse cx="60" cy="78" rx="26" ry="22" fill="#a16207"/><path d="M36 70 q10 -40 28 -20 q8 -28 20 -8" fill="#78350f"/><ellipse cx="78" cy="70" rx="8" ry="12" fill="#fde68a"/><circle cx="70" cy="68" r="3" fill="#0f172a"/>',
+      "羊": '<circle cx="46" cy="70" r="16" fill="#f8fafc"/><circle cx="68" cy="64" r="16" fill="#f8fafc"/><circle cx="74" cy="80" r="14" fill="#f8fafc"/><circle cx="58" cy="48" r="14" fill="#f8fafc"/><circle cx="53" cy="46" r="2" fill="#0f172a"/><circle cx="63" cy="46" r="2" fill="#0f172a"/>',
+      "熊": '<circle cx="40" cy="42" r="12" fill="#92400e"/><circle cx="80" cy="42" r="12" fill="#92400e"/><circle cx="60" cy="70" r="28" fill="#b45309"/><ellipse cx="60" cy="78" rx="12" ry="9" fill="#fde68a"/><circle cx="50" cy="64" r="3" fill="#0f172a"/><circle cx="70" cy="64" r="3" fill="#0f172a"/>',
+      "花": '<circle cx="60" cy="42" r="12" fill="#f9a8d4"/><circle cx="42" cy="58" r="12" fill="#f9a8d4"/><circle cx="78" cy="58" r="12" fill="#f9a8d4"/><circle cx="48" cy="80" r="12" fill="#f9a8d4"/><circle cx="72" cy="80" r="12" fill="#f9a8d4"/><circle cx="60" cy="64" r="10" fill="#fbbf24"/>',
+      "草": '<path d="M30 96 q10 -50 18 -8" stroke="#16a34a" stroke-width="6" fill="none"/><path d="M52 96 q8 -64 16 -6" stroke="#22c55e" stroke-width="6" fill="none"/><path d="M74 96 q12 -46 16 -4" stroke="#15803d" stroke-width="6" fill="none"/>',
+      "叶": '<path d="M34 78 q30 -70 58 -10 q-36 8 -58 10 z" fill="#4ade80"/><path d="M40 74 l40 -24" stroke="#166534" stroke-width="3"/>',
+      "树": '<rect x="52" y="70" width="16" height="32" rx="4" fill="#92400e"/><circle cx="60" cy="52" r="26" fill="#22c55e"/>',
+      "桃": '<path d="M60 34 q28 8 24 36 q-8 28 -24 28 q-16 0 -24 -28 q-4 -28 24 -36 z" fill="#fb7185"/><path d="M60 36 q8 -16 18 -14" stroke="#16a34a" stroke-width="4" fill="none"/><path d="M60 48 v28" stroke="#be123c" stroke-width="2"/>',
+      "荷": '<ellipse cx="60" cy="86" rx="28" ry="10" fill="#4ade80"/><ellipse cx="60" cy="58" rx="10" ry="18" fill="#f9a8d4"/><ellipse cx="44" cy="64" rx="10" ry="16" fill="#fbcfe8"/><ellipse cx="76" cy="64" rx="10" ry="16" fill="#fbcfe8"/>',
+      "兰": '<path d="M60 100 v-30" stroke="#16a34a" stroke-width="3"/><ellipse cx="60" cy="58" rx="8" ry="16" fill="#e9d5ff"/><ellipse cx="46" cy="66" rx="7" ry="14" fill="#ddd6fe"/><ellipse cx="74" cy="66" rx="7" ry="14" fill="#ddd6fe"/>',
+      "菊": '<g fill="#f59e0b">' + petals() + '</g><circle cx="60" cy="62" r="8" fill="#fde68a"/>',
+      "果": '<circle cx="60" cy="66" r="26" fill="#ef4444"/><path d="M60 40 q10 -16 16 -8" stroke="#16a34a" stroke-width="4" fill="none"/><ellipse cx="70" cy="34" rx="8" ry="5" fill="#22c55e"/>',
+      "梨": '<ellipse cx="60" cy="74" rx="24" ry="26" fill="#facc15"/><ellipse cx="60" cy="48" rx="12" ry="14" fill="#fde047"/><path d="M60 34 q8 -12 4 -18" stroke="#166534" stroke-width="3" fill="none"/>',
+      "瓜": '<ellipse cx="60" cy="64" rx="30" ry="24" fill="#84cc16"/><path d="M40 64 h40 M48 50 h28 M48 78 h28" stroke="#3f6212" stroke-width="3"/>',
+      "枣": '<ellipse cx="46" cy="64" rx="14" ry="20" fill="#b91c1c"/><ellipse cx="74" cy="64" rx="14" ry="20" fill="#dc2626"/>',
+      "杏": '<circle cx="60" cy="64" r="26" fill="#fb923c"/><path d="M60 42 v40" stroke="#c2410c" stroke-width="3"/>',
+      "李": '<circle cx="60" cy="64" r="26" fill="#7e22ce"/><ellipse cx="50" cy="54" rx="6" ry="4" fill="#e9d5ff" opacity="0.8"/>',
+      "橘": '<circle cx="60" cy="66" r="26" fill="#f97316"/><path d="M60 42 v48 M42 66 h36" stroke="#c2410c" stroke-width="2"/><ellipse cx="72" cy="38" rx="8" ry="5" fill="#22c55e"/>',
+      "莓": '<path d="M60 36 q28 10 22 40 q-8 24 -22 24 q-14 0 -22 -24 q-6 -30 22 -40 z" fill="#e11d48"/><circle cx="52" cy="62" r="2" fill="#fecdd3"/><circle cx="64" cy="70" r="2" fill="#fecdd3"/><circle cx="68" cy="56" r="2" fill="#fecdd3"/><path d="M46 42 h28 l-4 -10 h-20 z" fill="#16a34a"/>',
+      "妈": person("#f9a8d4", "bun"),
+      "爸": person("#93c5fd", "short"),
+      "我": person("#fbcfe8", "small"),
+      "姐": person("#c4b5fd", "pony"),
+      "妹": person("#f9a8d4", "pigtails"),
+      "奶": person("#ddd6fe", "grandma"),
+      "爷": person("#fdba74", "grandpa"),
+      "家": '<path d="M20 58 L60 28 L100 58 V96 H20 Z" fill="#fde68a"/><rect x="50" y="68" width="20" height="28" fill="#fb7185"/><rect x="32" y="66" width="12" height="12" fill="#7dd3fc"/>'
+    };
+
+    const ITEM_ART = {
+      "cat-ears": '<polygon points="34,70 46,28 58,70" fill="#f9a8d4"/><polygon points="62,70 74,28 86,70" fill="#f9a8d4"/>',
+      "bow": '<ellipse cx="44" cy="60" rx="18" ry="14" fill="#fb7185"/><ellipse cx="76" cy="60" rx="18" ry="14" fill="#fb7185"/><circle cx="60" cy="60" r="8" fill="#be123c"/>',
+      "puff-skirt": '<path d="M60 34 l14 24 h-28 z" fill="#fbcfe8"/><ellipse cx="60" cy="78" rx="34" ry="18" fill="#f472b6"/>',
+      "flower-crown": '<circle cx="36" cy="64" r="10" fill="#f9a8d4"/><circle cx="60" cy="52" r="12" fill="#fb7185"/><circle cx="84" cy="64" r="10" fill="#f9a8d4"/><circle cx="60" cy="58" r="5" fill="#fde68a"/>',
+      "pink-clip": '<rect x="34" y="54" width="52" height="14" rx="7" fill="#f9a8d4"/><circle cx="78" cy="61" r="10" fill="#fb7185"/>',
+      "petal-skirt": '<path d="M60 30 l12 22 h-24 z" fill="#fecdd3"/><ellipse cx="40" cy="76" rx="14" ry="18" fill="#fb7185"/><ellipse cx="60" cy="80" rx="14" ry="18" fill="#fda4af"/><ellipse cx="80" cy="76" rx="14" ry="18" fill="#fb7185"/>',
+      "strawberry-clip": '<path d="M60 34 q20 12 16 34 q-6 16 -16 16 q-10 0 -16 -16 q-4 -22 16 -34 z" fill="#e11d48"/><path d="M48 40 h24 l-4 -8 h-16 z" fill="#16a34a"/>',
+      "cherry-clip": '<path d="M48 50 q12 -24 24 0" stroke="#166534" stroke-width="3" fill="none"/><circle cx="46" cy="70" r="14" fill="#dc2626"/><circle cx="74" cy="70" r="14" fill="#ef4444"/>',
+      "candy-skirt": '<path d="M60 28 l14 20 h-28 z" fill="#fbcfe8"/><path d="M28 58 h64 l-10 34 h-44 z" fill="#f9a8d4"/><path d="M34 70 h52 M38 84 h44" stroke="#fff" stroke-width="6"/>',
+      "crown": '<path d="M24 78 l12 -36 24 24 24 -24 12 36 z" fill="#fbbf24"/><circle cx="36" cy="40" r="5" fill="#fde68a"/><circle cx="84" cy="40" r="5" fill="#fde68a"/>',
+      "ribbon": '<path d="M60 42 l22 20 -22 8 -22 -8 z" fill="#f472b6"/><path d="M48 66 l-8 28 16 -8 4 -20 z" fill="#fb7185"/><path d="M72 66 l8 28 -16 -8 -4 -20 z" fill="#fb7185"/>',
+      "princess-skirt": '<path d="M60 28 l16 24 h-32 z" fill="#e9d5ff"/><path d="M24 62 h112 l-16 36 h-80 z" fill="#c4b5fd" stroke="#fbbf24" stroke-width="4"/>'
+    };
+
+    const DRESS_ART = {
+      "default": '<path d="M80 108 C58 118 34 160 30 202 Q80 218 130 202 C126 160 102 118 80 108 Z" fill="#fbcfe8"/>',
+      "puff-skirt": '<path d="M80 108 L64 140 H96 Z" fill="#f9a8d4"/><ellipse cx="80" cy="172" rx="46" ry="28" fill="#f472b6"/>',
+      "petal-skirt": '<path d="M80 108 L66 142 H94 Z" fill="#fecdd3"/><ellipse cx="58" cy="176" rx="18" ry="24" fill="#fb7185"/><ellipse cx="80" cy="182" rx="18" ry="24" fill="#fda4af"/><ellipse cx="102" cy="176" rx="18" ry="24" fill="#fb7185"/>',
+      "candy-skirt": '<path d="M80 108 L62 196 Q80 210 98 196 Z" fill="#f9a8d4"/><path d="M66 150 h28 M64 168 h32" stroke="#fff" stroke-width="6"/>',
+      "princess-skirt": '<path d="M80 108 L48 198 Q80 214 112 198 Z" fill="#c4b5fd" stroke="#fbbf24" stroke-width="4"/>'
+    };
+
+    const HAIR_ART = {
+      "cat-ears": '<polygon points="52,58 62,28 72,58" fill="#f9a8d4"/><polygon points="88,58 98,28 108,58" fill="#f9a8d4"/>',
+      "bow": '<ellipse cx="108" cy="78" rx="14" ry="10" fill="#fb7185"/><ellipse cx="128" cy="78" rx="12" ry="9" fill="#fb7185"/><circle cx="116" cy="78" r="5" fill="#be123c"/>',
+      "flower-crown": '<circle cx="58" cy="46" r="7" fill="#f9a8d4"/><circle cx="80" cy="36" r="8" fill="#fb7185"/><circle cx="102" cy="46" r="7" fill="#f9a8d4"/>',
+      "pink-clip": '<rect x="96" y="62" width="28" height="8" rx="4" fill="#f9a8d4"/><circle cx="120" cy="66" r="6" fill="#fb7185"/>',
+      "strawberry-clip": '<path d="M112 52 q10 6 8 16 q-3 8 -8 8 q-5 0 -8 -8 q-2 -10 8 -16 z" fill="#e11d48"/>',
+      "cherry-clip": '<circle cx="108" cy="70" r="7" fill="#dc2626"/><circle cx="122" cy="70" r="7" fill="#ef4444"/>',
+      "crown": '<path d="M54 58 l10 -24 16 16 16 -16 10 24 z" fill="#fbbf24"/>',
+      "ribbon": '<path d="M108 62 l16 12 -16 6 -16 -6 z" fill="#f472b6"/><path d="M100 74 l-4 18 10 -6 z" fill="#fb7185"/>'
+    };
+
+    let progress = emptyProgress();
+    const session = {
+      screen: "home",
+      levelId: null,
+      queue: [],
+      qIndex: 0,
+      locked: false,
+      speechMissing: false,
+      quizEpoch: 0
+    };
+    let app = null;
+
+    function petals() {
+      let shapes = "";
+      for (let i = 0; i < 10; i += 1) {
+        const angle = (Math.PI * 2 * i) / 10;
+        const x = 60 + Math.cos(angle) * 22;
+        const y = 62 + Math.sin(angle) * 22;
+        shapes += '<ellipse cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" rx="8" ry="14" transform="rotate(' + (i * 36) + ' ' + x.toFixed(1) + ' ' + y.toFixed(1) + ')"/>';
+      }
+      return shapes;
+    }
+
+    function person(color, kind) {
+      const scale = kind === "small" || kind === "pigtails" ? 0.82 : 1;
+      const y = kind === "small" || kind === "pigtails" ? 18 : 0;
+      let hair = '<ellipse cx="60" cy="48" rx="16" ry="14" fill="#7c4a32"/>';
+      if (kind === "bun" || kind === "grandma") hair += '<circle cx="60" cy="30" r="8" fill="#7c4a32"/>';
+      if (kind === "grandma") hair = '<ellipse cx="60" cy="48" rx="16" ry="14" fill="#d6d3d1"/><circle cx="60" cy="30" r="8" fill="#d6d3d1"/>';
+      if (kind === "pony") hair += '<path d="M74 46 q16 10 8 28" stroke="#7c4a32" stroke-width="6" fill="none"/>';
+      if (kind === "pigtails") hair += '<circle cx="40" cy="58" r="6" fill="#7c4a32"/><circle cx="80" cy="58" r="6" fill="#7c4a32"/>';
+      if (kind === "grandpa") hair = '<ellipse cx="60" cy="48" rx="16" ry="12" fill="#e7e5e4"/><path d="M50 70 q10 14 20 0" fill="#d6d3d1"/>';
+      if (kind === "short") hair = '<ellipse cx="60" cy="46" rx="16" ry="10" fill="#44403c"/>';
+      const glasses = kind === "grandma" ? '<path d="M50 52 h8 M62 52 h8" stroke="#334155" stroke-width="2"/>' : "";
+      return '<g transform="translate(0 ' + y + ') scale(' + scale + ')">' + hair + '<circle cx="60" cy="52" r="14" fill="#fdba74"/>' + glasses + '<path d="M60 70 l18 28 h-36 z" fill="' + color + '"/></g>';
+    }
+
+    function emptyProgress() {
+      return {
+        clearedLevels: [],
+        ownedItemIds: [],
+        equipped: { hair: null, dress: null },
+        wardrobePending: false
+      };
+    }
+
+    function allItems() {
+      return LEVELS.reduce(function (list, level) {
+        return list.concat(level.rewards);
+      }, []);
+    }
+
+    function findLevel(id) {
+      return LEVELS.filter(function (level) { return level.id === id; })[0] || null;
+    }
+
+    function findItem(id) {
+      return allItems().filter(function (item) { return item.id === id; })[0] || null;
+    }
+
+    function loadProgress() {
+      const blank = emptyProgress();
+      let rawText = null;
+      try {
+        rawText = localStorage.getItem(STORAGE_KEY);
+      } catch (error) {
+        return blank;
+      }
+      if (!rawText) return blank;
+      let raw;
+      try {
+        raw = JSON.parse(rawText);
+      } catch (error) {
+        return blank;
+      }
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) return blank;
+      const levelIds = LEVELS.map(function (level) { return level.id; });
+      const items = allItems();
+      const cleared = Array.isArray(raw.clearedLevels) ? raw.clearedLevels.filter(function (id) { return levelIds.indexOf(id) !== -1; }) : [];
+      const owned = Array.isArray(raw.ownedItemIds) ? raw.ownedItemIds.filter(function (id) { return !!findItem(id); }) : [];
+      const equipped = { hair: null, dress: null };
+      const savedEquip = raw.equipped || {};
+      ["hair", "dress"].forEach(function (slot) {
+        const item = findItem(savedEquip[slot]);
+        if (item && item.slot === slot && owned.indexOf(item.id) !== -1) equipped[slot] = item.id;
+      });
+      const unique = function (list) {
+        return list.filter(function (id, index) { return list.indexOf(id) === index; });
+      };
+      return {
+        clearedLevels: unique(cleared),
+        ownedItemIds: unique(owned),
+        equipped: equipped,
+        wardrobePending: raw.wardrobePending === true && owned.length > 0
+      };
+    }
+
+    function saveProgress(state) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (error) {
+        return;
+      }
+    }
+
+    function shuffle(list) {
+      const copy = list.slice();
+      for (let i = copy.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const swap = copy[i];
+        copy[i] = copy[j];
+        copy[j] = swap;
+      }
+      return copy;
+    }
+
+    function makeOptions(level, answer) {
+      const rest = shuffle(level.chars.filter(function (item) { return item.char !== answer.char; }));
+      return shuffle([answer, rest[0], rest[1]]);
+    }
+
+    function applyLevelClear(progressState, level) {
+      if (progressState.clearedLevels.indexOf(level.id) !== -1) {
+        return { progress: progressState, openWardrobe: false };
+      }
+      const ownedItemIds = progressState.ownedItemIds.slice();
+      level.rewards.forEach(function (reward) {
+        if (ownedItemIds.indexOf(reward.id) === -1) ownedItemIds.push(reward.id);
+      });
+      return {
+        progress: {
+          clearedLevels: progressState.clearedLevels.concat(level.id),
+          ownedItemIds: ownedItemIds,
+          equipped: { hair: progressState.equipped.hair, dress: progressState.equipped.dress },
+          wardrobePending: true
+        },
+        openWardrobe: true
+      };
+    }
+
+    function applyEquip(progressState, item) {
+      const equipped = { hair: progressState.equipped.hair, dress: progressState.equipped.dress };
+      equipped[item.slot] = item.id;
+      return {
+        clearedLevels: progressState.clearedLevels.slice(),
+        ownedItemIds: progressState.ownedItemIds.slice(),
+        equipped: equipped,
+        wardrobePending: false
+      };
+    }
+
+    function svg(body) {
+      return '<svg viewBox="0 0 120 120" aria-hidden="true">' + body + "</svg>";
+    }
+
+    function princessMarkup(equipped) {
+      const dress = equipped && equipped.dress && DRESS_ART[equipped.dress] ? equipped.dress : "default";
+      const hair = equipped && equipped.hair && HAIR_ART[equipped.hair] ? HAIR_ART[equipped.hair] : "";
+      return '<svg class="princess" viewBox="0 0 160 220" aria-hidden="true">' +
+        DRESS_ART[dress] +
+        '<ellipse cx="46" cy="132" rx="11" ry="16" fill="#fdba74"/>' +
+        '<ellipse cx="114" cy="132" rx="11" ry="16" fill="#fdba74"/>' +
+        '<ellipse cx="80" cy="78" rx="30" ry="26" fill="#7c4a32"/>' +
+        '<circle cx="80" cy="74" r="24" fill="#fdba74"/>' +
+        '<circle cx="72" cy="72" r="2.5" fill="#44403c"/>' +
+        '<circle cx="88" cy="72" r="2.5" fill="#44403c"/>' +
+        '<circle cx="66" cy="80" r="4" fill="#fb7185" opacity="0.45"/>' +
+        '<circle cx="94" cy="80" r="4" fill="#fb7185" opacity="0.45"/>' +
+        '<path d="M74 82 q6 6 12 0" stroke="#be185d" stroke-width="2" fill="none"/>' +
+        hair +
+        "</svg>";
+    }
+
+    function frame(inner) {
+      const hidden = session.speechMissing ? "" : " hidden";
+      return '<div class="stage">' + inner +
+        '<p id="speech-note" class="note"' + hidden + ">这台设备读不出中文，仍然可以点字。</p></div>";
+    }
+
+    function fireworks() {
+      if (progress.clearedLevels.length < 4) return "";
+      const colors = ["#fde68a", "#ffffff", "#f9a8d4", "#fbbf24"];
+      let html = '<div class="fireworks" aria-hidden="true">';
+      for (let i = 0; i < 10; i += 1) {
+        html += '<span class="spark" style="left:' + (8 + i * 9) + "%;animation-delay:" + (i * 0.15).toFixed(2) + "s;background:" + colors[i % colors.length] + '"></span>';
+      }
+      return html + "</div>";
+    }
+
+    function setSpeechNote() {
+      const note = document.getElementById("speech-note");
+      if (!note) return;
+      note.hidden = !session.speechMissing;
+    }
+
+    function warmVoices() {
+      if (!window.speechSynthesis || typeof window.SpeechSynthesisUtterance !== "function") {
+        session.speechMissing = true;
+        return;
+      }
+      const check = function () {
+        const voices = window.speechSynthesis.getVoices();
+        if (!voices.length) return;
+        const chinese = voices.some(function (voice) {
+          return /zh|chinese/i.test(voice.lang + " " + voice.name);
+        });
+        if (!chinese) session.speechMissing = true;
+        setSpeechNote();
+      };
+      window.speechSynthesis.addEventListener("voiceschanged", check);
+      check();
+    }
+
+    function speak(text) {
+      return new Promise(function (resolve) {
+        if (!window.speechSynthesis || typeof window.SpeechSynthesisUtterance !== "function") {
+          session.speechMissing = true;
+          setSpeechNote();
+          resolve();
+          return;
+        }
+        let settled = false;
+        const finish = function () {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve();
+        };
+        const timer = setTimeout(finish, 1000);
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "zh-CN";
+        utterance.rate = 0.85;
+        utterance.onend = finish;
+        utterance.onerror = function (event) {
+          const reason = event && event.error;
+          if (reason !== "interrupted" && reason !== "canceled") {
+            session.speechMissing = true;
+            setSpeechNote();
+          }
+          finish();
+        };
+        window.speechSynthesis.cancel();
+        setTimeout(function () {
+          if (settled) return;
+          try {
+            if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+            window.speechSynthesis.speak(utterance);
+          } catch (error) {
+            session.speechMissing = true;
+            setSpeechNote();
+            finish();
+          }
+        }, 50);
+      });
+    }
+
+    function renderHome() {
+      const doors = LEVELS.map(function (level) {
+        const done = progress.clearedLevels.indexOf(level.id) !== -1;
+        return '<button type="button" class="door" data-action="level" data-id="' + level.id + '">' +
+          svg(CHAR_ART[level.chars[0].char]) +
+          '<span class="door-name">' + level.name + "</span>" +
+          '<span class="star">' + (done ? "★" : "") + "</span></button>";
+      }).join("");
+      const banner = progress.clearedLevels.length === 4 ? '<p class="banner">四关都过啦</p>' : "";
+      app.innerHTML = frame(
+        "<h1>糖果城堡</h1>" + fireworks() +
+        '<div class="hero">' + princessMarkup(progress.equipped) + "</div>" +
+        banner +
+        '<div class="doors">' + doors + "</div>"
+      );
+    }
+
+    function renderQuiz() {
+      const level = findLevel(session.levelId);
+      const answer = session.queue[session.qIndex];
+      const options = makeOptions(level, answer);
+      const dots = session.queue.map(function (_, index) {
+        const cls = index < session.qIndex ? "dot on" : index === session.qIndex ? "dot now" : "dot";
+        return '<span class="' + cls + '"></span>';
+      }).join("");
+      const choices = options.map(function (item) {
+        return '<button type="button" class="choice" data-action="pick" data-char="' + item.char + '">' + item.char + "</button>";
+      }).join("");
+      app.innerHTML = frame(
+        '<div class="quiz-top"><button type="button" class="back" data-action="back">回城堡</button><div class="dots">' + dots + "</div></div>" +
+        '<p class="level-name">' + level.name + "</p>" +
+        '<div class="picture-card">' + svg(CHAR_ART[answer.char]) + "</div>" +
+        '<div class="choices">' + choices + "</div>"
+      );
+      speak(answer.char);
+    }
+
+    function renderWardrobe() {
+      if (!progress.ownedItemIds.length) {
+        progress.wardrobePending = false;
+        session.screen = "home";
+        renderHome();
+        return;
+      }
+      const cards = progress.ownedItemIds.map(function (id) {
+        const item = findItem(id);
+        if (!item) return "";
+        const worn = progress.equipped[item.slot] === item.id ? " worn" : "";
+        return '<button type="button" class="item' + worn + '" data-action="wear" data-id="' + item.id + '">' +
+          svg(ITEM_ART[item.id]) + "<span>" + item.name + "</span></button>";
+      }).join("");
+      app.innerHTML = frame(
+        "<h1>衣橱</h1><p class=\"banner\">选一件穿上</p>" +
+        '<div class="hero">' + princessMarkup(progress.equipped) + "</div>" +
+        '<div class="wardrobe-grid">' + cards + "</div>"
+      );
+    }
+
+    function render() {
+      if (session.screen === "quiz") renderQuiz();
+      else if (session.screen === "wardrobe") renderWardrobe();
+      else renderHome();
+    }
+
+    function startLevel(id) {
+      const level = findLevel(id);
+      if (!level) return;
+      session.quizEpoch += 1;
+      session.levelId = id;
+      session.queue = shuffle(level.chars);
+      session.qIndex = 0;
+      session.locked = false;
+      session.screen = "quiz";
+      render();
+    }
+
+    function backHome() {
+      session.quizEpoch += 1;
+      session.locked = false;
+      session.screen = "home";
+      session.levelId = null;
+      session.queue = [];
+      session.qIndex = 0;
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      render();
+    }
+
+    function finishLevel() {
+      const level = findLevel(session.levelId);
+      const result = applyLevelClear(progress, level);
+      progress = result.progress;
+      if (result.openWardrobe) saveProgress(progress);
+      session.quizEpoch += 1;
+      session.levelId = null;
+      session.queue = [];
+      session.qIndex = 0;
+      session.locked = false;
+      session.screen = result.openWardrobe ? "wardrobe" : "home";
+      render();
+    }
+
+    function onPick(char) {
+      if (session.locked || session.screen !== "quiz") return;
+      const answer = session.queue[session.qIndex];
+      if (!answer) return;
+      if (char !== answer.char) {
+        const buttons = app.querySelectorAll(".choice");
+        for (let i = 0; i < buttons.length; i += 1) {
+          if (buttons[i].dataset.char === char) {
+            buttons[i].classList.remove("shake");
+            void buttons[i].offsetWidth;
+            buttons[i].classList.add("shake");
+          }
+        }
+        return;
+      }
+      session.locked = true;
+      const choices = app.querySelectorAll(".choice");
+      for (let i = 0; i < choices.length; i += 1) {
+        if (choices[i].dataset.char === char) choices[i].classList.add("right");
+      }
+      const card = app.querySelector(".picture-card");
+      if (card) card.classList.add("right");
+      const epoch = session.quizEpoch;
+      const levelId = session.levelId;
+      speak(answer.char).then(function () {
+        if (epoch !== session.quizEpoch) return;
+        if (session.screen !== "quiz" || session.levelId !== levelId) return;
+        session.qIndex += 1;
+        session.locked = false;
+        if (session.qIndex >= session.queue.length) finishLevel();
+        else render();
+      });
+    }
+
+    function equipItem(id) {
+      const item = findItem(id);
+      if (!item || progress.ownedItemIds.indexOf(id) === -1) return;
+      progress = applyEquip(progress, item);
+      saveProgress(progress);
+      session.screen = "home";
+      render();
+    }
+
+    function onAppClick(event) {
+      const target = event.target.closest("[data-action]");
+      if (!target) return;
+      const action = target.dataset.action;
+      if (action === "level") startLevel(target.dataset.id);
+      if (action === "back") backHome();
+      if (action === "pick") onPick(target.dataset.char);
+      if (action === "wear") equipItem(target.dataset.id);
+    }
+
+    function boot() {
+      app = document.getElementById("app");
+      progress = loadProgress();
+      warmVoices();
+      session.screen = progress.wardrobePending ? "wardrobe" : "home";
+      app.addEventListener("click", onAppClick);
+      render();
+    }
+
+    boot();
+  </script>
+</body>
+</html>
