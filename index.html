@@ -13,6 +13,9 @@
       font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
       touch-action: manipulation;
       overflow: hidden;
+      min-height: 100%;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
     }
     button {
       font-family: inherit;
@@ -20,14 +23,19 @@
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
     }
-    #app { width: 100%; height: 100%; }
+    #app { width: 100%; height: 100%; min-height: 100%; min-height: -webkit-fill-available; }
     .stage {
       position: relative;
       height: 100%;
+      height: 100vh;
+      height: 100dvh;
       min-height: 100%;
+      min-height: -webkit-fill-available;
       padding: 18px 24px 76px;
       overflow: hidden;
+      display: -webkit-flex;
       display: flex;
+      -webkit-flex-direction: column;
       flex-direction: column;
       background: linear-gradient(180deg, #6d28d9 0%, #db2777 58%, #fbbf24 100%);
     }
@@ -44,18 +52,27 @@
     }
     .stage > *:not(.fireworks):not(.note):not(.confetti) { position: relative; z-index: 1; }
     .split {
-      flex: 1;
+      -webkit-flex: 1 1 auto;
+      flex: 1 1 auto;
       min-height: 0;
+      display: -webkit-flex;
       display: flex;
       gap: 18px;
+      -webkit-align-items: stretch;
       align-items: stretch;
     }
     .hero-pane {
+      -webkit-flex: 0 0 34%;
       flex: 0 0 34%;
       min-width: 0;
+      min-height: 0;
+      display: -webkit-flex;
       display: flex;
+      -webkit-flex-direction: column;
       flex-direction: column;
+      -webkit-align-items: center;
       align-items: center;
+      -webkit-justify-content: center;
       justify-content: center;
     }
     h1 {
@@ -79,8 +96,11 @@
     }
     .doors, .wardrobe-grid { display: grid; gap: 14px; min-height: 0; min-width: 0; }
     .doors {
-      flex: 1;
+      -webkit-flex: 1 1 auto;
+      flex: 1 1 auto;
+      min-height: 180px;
       overflow: auto;
+      -webkit-overflow-scrolling: touch;
       align-content: start;
       grid-template-columns: repeat(4, 1fr);
       grid-auto-rows: minmax(128px, auto);
@@ -240,8 +260,7 @@
       100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1) rotate(var(--rot)); opacity: 0; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .shake, .spark, .petal { animation: none; }
-      .petal { opacity: 0; }
+      .shake, .spark { animation: none; }
     }
   </style>
 </head>
@@ -759,12 +778,22 @@ var PACKS = (function () {
         petal.textContent = bits[i % bits.length];
         const angle = (Math.PI * 2 * i) / 32 + (Math.random() - 0.5) * 0.4;
         const dist = 120 + Math.random() * 260;
-        petal.style.setProperty("--dx", Math.round(Math.cos(angle) * dist) + "px");
-        petal.style.setProperty("--dy", Math.round(Math.sin(angle) * dist * 0.72 + 90) + "px");
-        petal.style.setProperty("--rot", Math.round(Math.random() * 520 - 260) + "deg");
+        const dx = Math.round(Math.cos(angle) * dist) + "px";
+        const dy = Math.round(Math.sin(angle) * dist * 0.72 + 90) + "px";
+        const rot = Math.round(Math.random() * 520 - 260) + "deg";
         petal.style.fontSize = Math.round(22 + Math.random() * 20) + "px";
-        petal.style.animationDelay = (Math.random() * 0.08).toFixed(2) + "s";
+        petal.style.setProperty("--dx", dx);
+        petal.style.setProperty("--dy", dy);
+        petal.style.setProperty("--rot", rot);
         layer.appendChild(petal);
+        if (petal.animate) {
+          petal.style.animation = "none";
+          petal.animate([
+            { transform: "translate(-50%, -50%) scale(0.3) rotate(0deg)", opacity: 0 },
+            { transform: "translate(calc(-50% + " + dx + "), calc(-50% + " + dy + ")) scale(1) rotate(" + rot + ")", opacity: 1, offset: 0.16 },
+            { transform: "translate(calc(-50% + " + dx + "), calc(-50% + " + dy + ")) scale(1) rotate(" + rot + ")", opacity: 0 }
+          ], { duration: 1700, easing: "ease-out", fill: "forwards" });
+        }
       }
       stage.appendChild(layer);
       setTimeout(function () {
@@ -808,19 +837,33 @@ var PACKS = (function () {
       return best;
     }
 
+    let keptUtterance = null;
+
     function warmVoices() {
-      if (!window.speechSynthesis || typeof window.SpeechSynthesisUtterance !== "function") {
-        session.speechMissing = true;
+      try {
+        if (!window.speechSynthesis || typeof window.SpeechSynthesisUtterance !== "function") {
+          session.speechMissing = true;
+          return;
+        }
+        const check = function () {
+          try {
+            const voices = window.speechSynthesis.getVoices();
+            if (!voices.length) return;
+            if (!voices.some(isChineseVoice)) session.speechMissing = true;
+            setSpeechNote();
+          } catch (error) {
+            return;
+          }
+        };
+        if (window.speechSynthesis.addEventListener) {
+          window.speechSynthesis.addEventListener("voiceschanged", check);
+        } else {
+          window.speechSynthesis.onvoiceschanged = check;
+        }
+        check();
+      } catch (error) {
         return;
       }
-      const check = function () {
-        const voices = window.speechSynthesis.getVoices();
-        if (!voices.length) return;
-        if (!voices.some(isChineseVoice)) session.speechMissing = true;
-        setSpeechNote();
-      };
-      window.speechSynthesis.addEventListener("voiceschanged", check);
-      check();
     }
 
     function stopSpeech() {
@@ -856,11 +899,17 @@ var PACKS = (function () {
           }
           left -= 1;
           const utterance = new SpeechSynthesisUtterance(text);
+          keptUtterance = utterance;
           utterance.lang = "zh-CN";
           utterance.rate = 0.9;
           utterance.pitch = 1;
-          const voice = pickChineseVoice();
-          if (voice) utterance.voice = voice;
+          utterance.volume = 1;
+          try {
+            const voice = pickChineseVoice();
+            if (voice) utterance.voice = voice;
+          } catch (error) {
+            utterance.voice = null;
+          }
           let moved = false;
           const next = function () {
             if (moved) return;
@@ -873,11 +922,11 @@ var PACKS = (function () {
             if (left <= 0) finish();
             else setTimeout(sayOnce, 420);
           };
-          const utterTimer = setTimeout(next, 1600);
+          const utterTimer = setTimeout(next, 1800);
           utterance.onend = next;
           utterance.onerror = function (event) {
             const reason = event && event.error;
-            if (reason !== "interrupted" && reason !== "canceled") {
+            if (reason !== "interrupted" && reason !== "canceled" && reason !== "not-allowed") {
               session.speechMissing = true;
               setSpeechNote();
             }
@@ -887,20 +936,20 @@ var PACKS = (function () {
           try {
             if (window.speechSynthesis.paused) window.speechSynthesis.resume();
             window.speechSynthesis.speak(utterance);
+            window.speechSynthesis.resume();
           } catch (error) {
             session.speechMissing = true;
             setSpeechNote();
             finish();
           }
         };
-        window.speechSynthesis.cancel();
-        setTimeout(function () {
-          if (token !== speechToken) {
-            finish();
-            return;
-          }
-          sayOnce();
-        }, 60);
+        try {
+          window.speechSynthesis.cancel();
+        } catch (error) {
+          finish();
+          return;
+        }
+        sayOnce();
       });
     }
 
@@ -1096,7 +1145,9 @@ var PACKS = (function () {
       burstPetals();
       const epoch = session.quizEpoch;
       const levelId = session.levelId;
-      speak(answer.char, 2).then(function () {
+      const spoken = speak(answer.char, 2);
+      const flowers = new Promise(function (resolve) { setTimeout(resolve, 1700); });
+      Promise.all([spoken, flowers]).then(function () {
         if (epoch !== session.quizEpoch) return;
         if (session.screen !== "quiz" || session.levelId !== levelId) return;
         session.qIndex += 1;
@@ -1148,7 +1199,12 @@ var PACKS = (function () {
     function boot() {
       app = document.getElementById("app");
       progress = loadProgress();
-      warmVoices();
+      try { warmVoices(); } catch (error) {}
+      setInterval(function () {
+        try {
+          if (window.speechSynthesis && window.speechSynthesis.speaking) window.speechSynthesis.resume();
+        } catch (error) {}
+      }, 4000);
       session.screen = progress.wardrobePending ? "wardrobe" : "home";
       let ignoreClickUntil = 0;
       let touchStart = null;
