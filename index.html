@@ -143,6 +143,7 @@
     }
     .quiz-top { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
     .quiz-top .level-name { margin: 0; flex: 1; text-align: left; }
+    .wardrobe-leave { margin-top: 16px; }
     .back {
       min-height: 48px;
       padding: 8px 14px;
@@ -226,7 +227,7 @@
       .stage { overflow: auto; }
       body { overflow: auto; }
     }
-    .fireworks { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
+    .fireworks { position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none; overflow: hidden; z-index: 2; }
     .spark {
       position: absolute;
       bottom: 90px;
@@ -242,22 +243,19 @@
     }
     .confetti {
       position: absolute;
-      inset: 0;
-      z-index: 4;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 20;
       pointer-events: none;
       overflow: hidden;
     }
     .petal {
       position: absolute;
-      left: 50%;
-      top: 38%;
       line-height: 1;
-      animation: petal-fall 1.4s ease-out forwards;
-    }
-    @keyframes petal-fall {
-      0% { transform: translate(-50%, -50%) scale(0.3) rotate(0deg); opacity: 0; }
-      18% { opacity: 1; }
-      100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1) rotate(var(--rot)); opacity: 0; }
+      -webkit-transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%);
     }
     @media (prefers-reduced-motion: reduce) {
       .shake, .spark { animation: none; }
@@ -763,29 +761,36 @@ var PACKS = (function () {
       return html + "</div>";
     }
 
-    function throwPetals(layer) {
+    function throwPetals(layer, width, height) {
       const bits = ["🌸", "🌼", "✨", "💗", "🌺", "⭐"];
+      const originX = Math.round(width * 0.5);
+      const originY = Math.round(height * 0.42);
       for (let i = 0; i < 24; i += 1) {
         const petal = document.createElement("span");
         petal.className = "petal";
         petal.textContent = bits[i % bits.length];
         const angle = (Math.PI * 2 * i) / 24 + (Math.random() - 0.5) * 0.5;
         const dist = 90 + Math.random() * 130;
-        const farX = Math.round(Math.cos(angle) * dist);
-        const farY = Math.round(Math.sin(angle) * dist * 0.6 + 20);
-        const rot = Math.round(Math.random() * 360 - 180);
-        petal.style.fontSize = Math.round(36 + Math.random() * 20) + "px";
-        petal.style.setProperty("--dx", farX + "px");
-        petal.style.setProperty("--dy", farY + "px");
-        petal.style.setProperty("--rot", rot + "deg");
+        const farX = originX + Math.round(Math.cos(angle) * dist);
+        const farY = originY + Math.round(Math.sin(angle) * dist * 0.6);
+        const midX = originX + Math.round((farX - originX) * 0.45);
+        const midY = originY + Math.round((farY - originY) * 0.45);
+        petal.style.fontSize = Math.round(40 + Math.random() * 18) + "px";
+        petal.style.left = originX + "px";
+        petal.style.top = originY + "px";
+        petal.style.opacity = "1";
         layer.appendChild(petal);
-        if (petal.animate) {
-          petal.style.animation = "none";
+        if (!petal.animate) continue;
+        try {
           petal.animate([
-            { transform: "translate(-50%, -50%) scale(0.35) rotate(0deg)", opacity: 0 },
-            { transform: "translate(calc(-50% + " + Math.round(farX * 0.55) + "px), calc(-50% + " + Math.round(farY * 0.55) + "px)) scale(1.05) rotate(" + Math.round(rot * 0.5) + "deg)", opacity: 1, offset: 0.22 },
-            { transform: "translate(calc(-50% + " + farX + "px), calc(-50% + " + farY + "px)) scale(1) rotate(" + rot + "deg)", opacity: 0 }
+            { left: originX + "px", top: originY + "px", opacity: 0 },
+            { left: midX + "px", top: midY + "px", opacity: 1, offset: 0.18 },
+            { left: farX + "px", top: farY + "px", opacity: 1, offset: 0.62 },
+            { left: farX + "px", top: farY + "px", opacity: 0 }
           ], { duration: 1400, easing: "ease-out", fill: "forwards" });
+        } catch (error) {
+          petal.style.left = farX + "px";
+          petal.style.top = farY + "px";
         }
       }
     }
@@ -799,10 +804,12 @@ var PACKS = (function () {
       layer.className = "confetti";
       layer.setAttribute("aria-hidden", "true");
       stage.appendChild(layer);
-      throwPetals(layer);
+      const width = stage.clientWidth || window.innerWidth;
+      const height = stage.clientHeight || window.innerHeight;
+      throwPetals(layer, width, height);
       setTimeout(function () {
         if (!layer.parentNode) return;
-        throwPetals(layer);
+        throwPetals(layer, width, height);
       }, 780);
       setTimeout(function () {
         if (layer.parentNode) layer.parentNode.removeChild(layer);
@@ -1078,6 +1085,7 @@ var PACKS = (function () {
             "<h1>衣橱</h1>" +
             '<div class="hero">' + princessMarkup(progress.equipped) + "</div>" +
             '<p class="banner">选一件穿上</p>' +
+            '<button type="button" class="back wardrobe-leave" data-action="back">去关卡</button>' +
           "</div>" +
           '<div class="wardrobe-grid">' + cards + "</div>" +
         "</div>"
@@ -1170,7 +1178,7 @@ var PACKS = (function () {
       if (!item || progress.ownedItemIds.indexOf(id) === -1) return;
       progress = applyEquip(progress, item);
       saveProgress(progress);
-      session.screen = session.categoryId ? "category" : "home";
+      session.screen = "wardrobe";
       render();
     }
 
